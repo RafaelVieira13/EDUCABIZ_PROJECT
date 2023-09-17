@@ -1,5 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
+from dash import dcc, html, Output, Input, State
 
 # Define the external stylesheets
 external_stylesheets = [
@@ -21,22 +22,43 @@ app.scripts.config.serve_locally = True
 # Define the server
 server = app.server
 
-# Define the layout for your app here
-app.layout = dbc.Container(
+#========= SideBar ============#
+offcanvas = html.Div(
     [
-        # Add your Dash components here
-        dbc.NavbarSimple(
-            children=[
-                dbc.NavItem(dbc.NavLink("Home", href="/")),
-                dbc.NavItem(dbc.NavLink("Page 1", href="/page-1")),
-                dbc.NavItem(dbc.NavLink("Page 2", href="/page-2")),
-            ],
-            brand="Your App",
-            brand_href="/",
-            color="primary",
-            dark=True,
+        dbc.Button('Explore', id='open-offcanvas', n_clicks=0),
+        dbc.Offcanvas(
+            dbc.ListGroup(
+                [
+                    dbc.ListGroupItem(page['name'], href=page['path'])
+                    for page in dash.page_registry.values()
+                    if page['module'] != 'pages.not_found_404'
+                ]
+            ),
+            id='offcanvas',
+            is_open=False,
         ),
-        # Additional content can be added here
     ],
-    fluid=True,
+    className='my-3'
 )
+
+# Connect to your app pages
+from apps import Visão_Geral, Escola_Especifica
+
+
+#=========  Layout  =========== #
+app.layout = dbc.Container(html.Div([
+    offcanvas,dash.page_container
+]), fluid=True)
+
+@app.callback(
+    Output("offcanvas", "is_open"),
+    Input("open-offcanvas", "n_clicks"),
+    [State("offcanvas", "is_open")],
+)
+def toggle_offcanvas(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
+
+if __name__ == "__main__":
+    app.run_server(debug=True, port=8001)
