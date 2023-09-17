@@ -20,3 +20,23 @@ app.scripts.config.serve_locally = True
 
 # Define the server
 server = app.server
+
+# Define the layout for your app here
+app.layout = dbc.Container(
+    [
+        # Add your Dash components here
+        dbc.NavbarSimple(
+            children=[
+                dbc.NavItem(dbc.NavLink("Home", href="/")),
+                dbc.NavItem(dbc.NavLink("Page 1", href="/page-1")),
+                dbc.NavItem(dbc.NavLink("Page 2", href="/page-2")),
+            ],
+            brand="Your App",
+            brand_href="/",
+            color="primary",
+            dark=True,
+        ),
+        # Additional content can be added here
+    ],
+    fluid=True,
+)
