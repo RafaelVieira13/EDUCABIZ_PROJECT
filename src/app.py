@@ -2,6 +2,7 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, html, Output, Input, State
 
+
 # Define the external stylesheets
 external_stylesheets = [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css",
@@ -22,6 +23,9 @@ app.scripts.config.serve_locally = True
 # Define the server
 server = app.server
 
+# Connect to your app pages
+from pages import Visão_Geral, Escola_Especifica
+
 #========= SideBar ============#
 offcanvas = html.Div(
     [
@@ -29,9 +33,9 @@ offcanvas = html.Div(
         dbc.Offcanvas(
             dbc.ListGroup(
                 [
-                    dbc.ListGroupItem(page['name'], href=page['path'])
-                    for page in dash.page_registry.values()
-                    if page['module'] != 'pages.not_found_404'
+                    dbc.ListGroupItem(pages['name'], href=pages['path'])
+                    for pages in dash.page_registry.values()
+                    if pages['module'] != 'pages.not_found_404'
                 ]
             ),
             id='offcanvas',
@@ -40,10 +44,6 @@ offcanvas = html.Div(
     ],
     className='my-3'
 )
-
-# Connect to your app pages
-from apps import Visão_Geral, Escola_Especifica
-
 
 #=========  Layout  =========== #
 app.layout = dbc.Container(html.Div([

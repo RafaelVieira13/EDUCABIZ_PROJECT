@@ -8,7 +8,7 @@ from app import app
 from app import server
 
 # Connect to your app pages
-from apps import Visão_Geral, Escola_Especifica
+from pages import Visão_Geral, Escola_Especifica
 
 #========= SideBar ============#
 offcanvas = html.Div(
