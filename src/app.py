@@ -1,64 +1,49 @@
 import dash
+from dash import html, dcc
 import dash_bootstrap_components as dbc
-from dash import dcc, html, Output, Input, State
 
-
-# Define the external stylesheets
-external_stylesheets = [
-    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css",
-    "https://fonts.googleapis.com/icon?family=Material+Icons",
-    dbc.themes.LITERA  # Applying the "LITERA" theme
-]
-
-# Additional CSS for dbc components
-dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.0.4/dbc.min.css"
-
-# Create a Dash app instance
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets + [dbc_css])
-
-# Suppress callback exceptions and serve scripts locally
-app.config['suppress_callback_exceptions'] = True
-app.scripts.config.serve_locally = True
-
-# Define the server
+app = dash.Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.SPACELAB])
 server = app.server
 
-# Connect to your app pages
-from pages import Visão_Geral, Escola_Especifica
+sidebar = dbc.Nav(
+            [
+                dbc.NavLink(
+                    [
+                        html.Div(page["name"], className="ms-2"),
+                    ],
+                    href=page["path"],
+                    active="exact",
+                )
+                for page in dash.page_registry.values()
+            ],
+            vertical=True,
+            pills=True,
+            className="bg-light",
+)
 
-#========= SideBar ============#
-offcanvas = html.Div(
-    [
-        dbc.Button('Explore', id='open-offcanvas', n_clicks=0),
-        dbc.Offcanvas(
-            dbc.ListGroup(
+app.layout = dbc.Container([
+    dbc.Row([
+        dbc.Col(html.Div(html.Img(src='assets/logo_educabiz3.png', style={'display': 'block', 'margin': '0 auto', 'height':'8vh'}),
+                         style={'textAlign':'center'}))
+    ]),
+
+    html.Hr(),
+
+    dbc.Row(
+        [
+            dbc.Col(
                 [
-                    dbc.ListGroupItem(pages['name'], href=pages['path'])
-                    for pages in dash.page_registry.values()
-                    if pages['module'] != 'pages.not_found_404'
-                ]
-            ),
-            id='offcanvas',
-            is_open=False,
-        ),
-    ],
-    className='my-3'
-)
+                    sidebar
+                ], xs=4, sm=4, md=2, lg=2, xl=2, xxl=2),
 
-#=========  Layout  =========== #
-app.layout = dbc.Container(html.Div([
-    offcanvas,dash.page_container
-]), fluid=True)
+            dbc.Col(
+                [
+                    dash.page_container
+                ], xs=8, sm=8, md=10, lg=10, xl=10, xxl=10)
+        ]
+    )
+], fluid=True)
 
-@app.callback(
-    Output("offcanvas", "is_open"),
-    Input("open-offcanvas", "n_clicks"),
-    [State("offcanvas", "is_open")],
-)
-def toggle_offcanvas(n1, is_open):
-    if n1:
-        return not is_open
-    return is_open
 
 if __name__ == "__main__":
-    app.run_server(debug=True, port=8001)
+    app.run(debug=True)
