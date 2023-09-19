@@ -241,7 +241,7 @@ def month_nivel_filter(selected_nivel, selected_range):
     
 # =========  Callbacks  =========== #
 
-# Indicador
+# Indicador ----- Ver Este Indicador Porque Uma Mesma Escola Em Momentos Diferentes Tem Duas Classificações Diferentes
 
 @callback(
     Output('indicador_numero_escolas', 'figure'),
@@ -252,7 +252,7 @@ def indicador(nivel_interacao):
     # Indicador Numero de Escolas
     if nivel_interacao is None or len(nivel_interacao) == 0:
         # When no nivel_interacao is selected, show the total number of escolas
-        total_escolas = df1['escola'].count()
+        total_escolas = df1['escola'].nunique()
         indicador_escolas = go.Figure(go.Indicator(
             mode='number',
             title={'text': f"<span>Total de Escolas"},
@@ -269,7 +269,7 @@ def indicador(nivel_interacao):
 
         if not df_filtered.empty:
             # Indicator Nivel Interacao Número de Escolas
-            df_filtered = df_filtered.groupby('nivel_interacao')['escola'].count().reset_index()
+            df_filtered = df_filtered.groupby('nivel_interacao')['escola'].nunique().reset_index()
             indicador_escolas = go.Figure(go.Indicator(
                 mode='number',
                 title={'text': f"<span>{df_filtered['nivel_interacao'].iloc[0]} e Número de Escolas"},
