@@ -48,7 +48,8 @@ card_icon = {
 indicator_height = 150
 
 #======== Reading and Cleaning The Data =========#
-df = pd.read_csv('datasets/EDUCABIZ.csv')
+url = 'https://raw.githubusercontent.com/RafaelVieira13/EDUCABIZ_PROJECT/main/datasets/EDUCABIZ.csv'
+df = pd.read_csv(url)
 
 # Missing Values is equal to 0 so let´s replace all the missing values by 0
 df.fillna(0,inplace=True)
