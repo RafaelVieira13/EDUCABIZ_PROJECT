@@ -262,7 +262,7 @@ def indicador(nivel_interacao):
         
         indicador_escolas.update_layout(
             width=350,
-            height=150)
+            height=120)
     else:
         mask = nivel_inter_filter(nivel_interacao)
         df_filtered = df1.loc[mask]
@@ -278,13 +278,13 @@ def indicador(nivel_interacao):
             ))
             indicador_escolas.update_layout(
             width=350,
-            height=150)
+            height=120)
             
         else:
             indicador_escolas = go.Figure()
             indicador_escolas.update_layout(
             width=350,
-            height=150)
+            height=100)
             
 
     return indicador_escolas
@@ -320,11 +320,9 @@ def indicador(nivel_interacao):
                      x='kpi',
                      y='numero_interacoes',
                      color='nivel_interacao',
-                     color_discrete_map={
-                         'Menor Interação': 'royalblue',
-                         'Interacção Intermédia': '#000000',
-                         'Elevada Interação': 'grey'},
-                     labels={'numero_interacoes': 'Number de Interações', 'kpi': 'KPI'},
+                     color_discrete_map={'Menor Interação': 'red',
+                                                       'Interação Intermédia': 'lightgrey',
+                                                       'Elevada Interação': 'blue'},
                      template='simple_white')
         
     fig_kpi_use.update_layout(width=900,height=550,
@@ -355,9 +353,9 @@ def indicador(nivel_interacao):
     nivel_interacao_pie_chart = px.pie(df1,
                                    names='nivel_interacao',
                                    color='nivel_interacao',
-                                   color_discrete_map={'Menor Interação': 'royalblue',
-                                                       'Interacção Intermédia': 'pink',
-                                                       'Elevada Interação': 'grey'},
+                                   color_discrete_map={'Menor Interação': 'red',
+                                                       'Interação Intermédia': 'lightgrey',
+                                                       'Elevada Interação': 'blue'},
                                    labels={'nivel_interacao': 'Nivel Interação',
                                            'value': 'Número de Escolas'}
                                    )
@@ -379,7 +377,7 @@ def indicador(nivel_interacao):
 
     return nivel_interacao_pie_chart
 
-# Tabela
+# Tabela  ------- Ver TABELA- RANGE SLIDER NÃO ESTA A FUNCIONAR
 @callback(
     Output('table', 'figure'),
     [Input('nivel_int_dropdown', 'value')],
