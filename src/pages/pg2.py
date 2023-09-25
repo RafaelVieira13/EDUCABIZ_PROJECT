@@ -84,7 +84,42 @@ df1['nivel_interacao'] = df1['nivel_interacao'].replace(0, 'Menor Interação')
 df1['nivel_interacao'] = df1['nivel_interacao'].replace(2, 'Interação Intermédia')
 df1['nivel_interacao'] = df1['nivel_interacao'].replace(1, 'Elevada Interação')
 
+# Replca the months by numbers in order to apply the renge slider
+df1['month'] = df1['month'].replace('Jan',1)
+df1['month'] = df1['month'].replace('Fev',2)
+df1['month'] = df1['month'].replace('Mar',3)
+df1['month'] = df1['month'].replace('Abri',4)
+df1['month'] = df1['month'].replace('Mai',5)
+df1['month'] = df1['month'].replace('Jun',6)
+df1['month'] = df1['month'].replace('Jul',7)
+df1['month'] = df1['month'].replace('Ago',8)
+df1['month'] = df1['month'].replace('Set',9)
+df1['month'] = df1['month'].replace('Out',10)
+df1['month'] = df1['month'].replace('Nov',11)
+df1['month'] = df1['month'].replace('Dez',12)
 
+df1['month'] = df1['month'].astype(int)
+
+
+# Let´s Create a dictionary to change the range slider to the month names
+months = {
+    1: 'Jan',
+    2: 'Fev',
+    3: 'Mar',
+    4: 'Abri',
+    5: 'Mai',
+    6: 'Jun',
+    7: 'Jul',
+    8: 'Ago',
+    9: 'Set',
+    10: 'Out',
+    11: 'Nov',
+    12: 'Dez'
+}
+
+# Data To the line-plot. Use pd.melt() to convert kpi columns into rows
+df_line_plot = pd.melt(df1, id_vars=['month','escola','slug','nivel_interacao'], var_name='kpi', value_name='interacoes')
+df_line_plot[df_line_plot['escola']=='ABLA']
 
 # =========  Layout  =========== #
 
@@ -94,79 +129,191 @@ layout = html.Div(
             [
                 dbc.Col(
                     [
-                        dcc.Dropdown(options= [{'label':escola, 'value':escola} for escola in df1['escola'].unique()],
+                        dcc.Dropdown(options=[{'label': escola, 'value': escola} for escola in df1['escola'].unique()],
                                      id='escola_dropdown')
                     ], xs=10, sm=10, md=8, lg=4, xl=4, xxl=4,
                     style={'margin-bottom': '15px'}
                 )
             ]
         ),
-        
-        # Indicador Nivel de Interação - Numero de Escolas
-        
+
+        # Indicador Nivel de Interação e Line Plot (Numero de Interacoes)
+
         dbc.Row(
             [
-              dbc.Col([
-                  dbc.CardGroup([
-                      dbc.Card(
-                          dcc.Graph(id='indicador_escola', className='dbc'),
-                          style={'maxWidth':'1000px','height':indicator_height,'padding-left':'20px','padding-top': '10px'}
-                      ),
-                      dbc.Card(
-                          html.Div(),
-                          color='lightsteelblue',
-                          style={'maxWidth':'65px','height':indicator_height, 'margin-left':'-10px'}
-                      )
-                  ])
-              ], width=4)
+                dbc.Col([
+                    dbc.CardGroup([
+                        dbc.Card(
+                            dcc.Graph(id='indicador_escola', className='dbc'),
+                            style={'maxWidth': '450px', 'height': indicator_height, 'padding-left': '20px',
+                                   'padding-top': '10px', 'margin-bottom': '40px'}
+                        ),
+                        dbc.Card(
+                            html.Div(),
+                            color='lightsteelblue',
+                            style={'maxWidth': '65px', 'height': indicator_height, 'margin-left': '-10px'}
+                        )
+                    ]),
+                    dbc.Card(
+                        dcc.Graph(id='kpi_use_escola'),
+                        style={'width': '100%', 'height': '450px', 'padding': '10px', 'padding-top': '10px'}
+                    )
+                ], width=6),
+
+                dbc.Col([
+                    dbc.CardGroup([
+                        dbc.Card(
+                            dbc.CardBody([
+                                html.H2('Interações ao Longo do Tempo', className='card-title',
+                                        style={'font-weight': 'bold', 'color': '#343a40'}),
+                                dcc.RangeSlider(
+                                    id='month_slider_escola',
+                                    min=df1['month'].min(),
+                                    max=df1['month'].max(),
+                                    step=1,
+                                    marks={i: months[i] for i in range(1, 13)},
+                                    value=[df1['month'].min(), df1['month'].max()],
+                                ),
+                                html.Br(),
+                                dcc.Dropdown(
+                                    options=[{'label': kpi, 'value': kpi} for kpi in df1.iloc[:, 3:13].columns],
+                                    id='kpi_dropdown_escola', style={'maxWidth': '200px', 'margin-left': '10px'}),
+                                dcc.Graph(id='line_kpi_use_escola', className='dbc')
+                            ])
+                        )
+                    ])
+
+                ], width=6)
             ]
         )
     ]
 )
 
-
-# =========  Functions To Filter the Data  =========== #
-def escola_filter(escola):
-    if escola is None or len(escola) == 0:
-        mask = df1['escola'].isin(df1['escola'].unique())
-    else:
-        if not isinstance(escola, list):
-            escola = [escola]  # Convert single value to a list
-        mask = df1['escola'].isin(escola)
-    return mask
-
 # =========  Callbacks  =========== #
+
+# Indicador
+
+
 @callback(
     Output('indicador_escola', 'figure'),
     [Input('escola_dropdown', 'value')]
 )
 def indicador(escola):
-    escola_mask = escola_filter(escola)
-    df_filtered = df1.loc[escola_mask]
-    
-    df_filtered = df_filtered.groupby(['escola','nivel_interacao']).count().reset_index()
+    df_filtered = df1[df1['escola']==escola]
+
+    df_filtered = df_filtered.groupby(['escola', 'nivel_interacao']).count().reset_index()
     if not df_filtered.empty:
-        
+
         indicador_escola = go.Figure(go.Indicator(title={'text': f"<span>{df_filtered['escola'].iloc[0]}"}))
         indicador_escola.add_annotation(
-        text=df_filtered['nivel_interacao'].iloc[0],
-        x=0.5,
-        y=0.8,
-        showarrow=False,
-        font={'size': 24})
-        
-        indicador_escola.update_layout(width=400,height=100)
-    
+            text=df_filtered['nivel_interacao'].iloc[0],
+            x=0.5,
+            y=0.8,
+            showarrow=False,
+            font={'size': 24})
+
+        indicador_escola.update_layout(width=400, height=100)
+
     else:
         indicador_escola = go.Figure(go.Indicator(title=''))
         indicador_escola.add_annotation(
-        text="Escolha uma Escola",
-        x=0.5,
-        y=0.5,
-        showarrow=False,
-        font={'size': 16})
-        
-        indicador_escola.update_layout(width=400,height=100)
-    
+            text="Escolha uma Escola",
+            x=0.5,
+            y=0.5,
+            showarrow=False,
+            font={'size': 16})
+
+        indicador_escola.update_layout(width=400, height=100)
+
     return indicador_escola
-            
+
+
+# KPI Use
+
+@callback(
+    Output('kpi_use_escola', 'figure'),
+    [Input('escola_dropdown', 'value')]
+)
+def indicador_kpi(escola):
+    df_filtered = df1[df1['escola'] == escola]
+
+    # BAR CHART -KPI USE
+    df_kpi_use = df_filtered.groupby('nivel_interacao').agg(tutores=('tutores', 'sum'),
+                                                            second_tutor=('second_tutor', 'sum'),
+                                                            docs_fiscais=('docs_fiscais (15_dias)', 'sum'),
+                                                            mensagens=('mensagens (7_dias)', 'sum'),
+                                                            atividades=('atividades (7_dias)', 'sum'),
+                                                            relatorios_diarios=('relatorios_diarios (7_dias)', 'sum'),
+                                                            avaliacoes=('avaliacoes (7_dias)', 'sum'),
+                                                            menus=('menus (7_dias)', 'sum'),
+                                                            eventos=('eventos (15_dias)', 'sum')).reset_index()
+
+    df_kpi_use = pd.melt(df_kpi_use, id_vars=['nivel_interacao'], value_vars=df_kpi_use.iloc[:, 1:])
+    df_kpi_use.rename(columns={'variable': 'kpi', 'value': 'numero_interacoes'}, inplace=True)
+    df_kpi_use.sort_values(by='numero_interacoes', ascending=False, inplace=True)
+
+    # Define custom colors based on 'nivel_interacao'
+
+    fig_kpi_use = px.bar(df_kpi_use,
+                         x='kpi',
+                         y='numero_interacoes',
+                         color='nivel_interacao',
+                         color_discrete_map={'Menor Interação': 'red',
+                                             'Interação Intermédia': 'lightgrey',
+                                             'Elevada Interação': 'blue'},
+                         template='simple_white')
+
+    fig_kpi_use.update_layout(width=700, height=420,
+                              title={'text': '<b>Utilização de KPIs<b>',
+                                     'font': {'size': 22}},
+                              xaxis_title=None,
+                              legend_title='Nivel de Interação')
+
+    fig_kpi_use.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+
+    fig_kpi_use.update_yaxes(title_text='Numero de Interações', title_font=dict(size=16), tickfont=dict(size=15))
+
+    fig_kpi_use.update_xaxes(tickfont=dict(size=15))
+
+    return fig_kpi_use
+
+
+# Line Plot - Kpi by month
+@callback(
+    Output('line_kpi_use_escola', 'figure'),
+     [Input('escola_dropdown', 'value')],
+    [Input('month_slider_escola','value')],
+    [Input('kpi_dropdown_escola', 'value')]
+)
+
+def line_plot_escola(escola,month, kpi):
+    df_filtered = df_line_plot[
+        (df_line_plot['month'] >= month[0]) & 
+        (df_line_plot['month'] <= month[1]) &
+        (df_line_plot['escola'] == escola) &
+        (df_line_plot['kpi'] == kpi)
+    ]
+    
+    df_plot = df_filtered.groupby('month')['interacoes'].sum().reset_index().sort_values(by='month')
+    
+    by_month = go.Figure(go.Scatter(
+    x=df_plot['month'], 
+    y=df_plot['interacoes'], 
+    mode='lines',
+    line=dict(color='royalblue'),
+    fill='tonexty',
+    hovertext=[f'Mês: {month}<br>Interaçôes: {interacoes}' for month, interacoes in zip(df_plot['month'], df_plot['interacoes'])]
+))
+    by_month.update_xaxes(tickfont=dict(size=16))
+    by_month.update_yaxes(title_text='Número de Interações',title_font={'size': 17}, tickfont=dict(size=16))
+
+    by_month.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+
+    by_month.update_layout(width=700,
+                       height=400,
+                       template='simple_white')
+    
+    return by_month
+
+
+

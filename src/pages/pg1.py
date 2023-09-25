@@ -119,6 +119,10 @@ months = {
     12: 'Dez'
 }
 
+# Data To the line-plot. Use pd.melt() to convert kpi columns into rows
+df_line_plot = pd.melt(df1, id_vars=['month','escola','slug','nivel_interacao'], var_name='kpi', value_name='interacoes')
+
+
 # =========  Layout  =========== #
 
 layout = html.Div(
@@ -172,7 +176,7 @@ layout = html.Div(
                         dbc.CardBody([
                             html.H2('Tabela', className='card-title',style={'font-weight':'bold','color':'#343a40'}),
                             dcc.RangeSlider(
-                                id='month_slider',
+                                id='month_slider_table',
                                 min=df1['month'].min(),
                                 max=df1['month'].max(),
                                 step=1,
@@ -193,7 +197,7 @@ layout = html.Div(
                 dbc.CardGroup([
                     dbc.Card(
                         dbc.CardBody([
-                            html.H2('Line Plot', className='card-title',style={'font-weight':'bold','color':'#343a40'}),
+                            html.H2('Interações Por Mês', className='card-title',style={'font-weight':'bold','color':'#343a40'}),
                             dcc.RangeSlider(
                                 id='month_slider',
                                 min=df1['month'].min(),
@@ -205,7 +209,6 @@ layout = html.Div(
                             html.Br(),
                             dcc.Dropdown(options= [{'label':kpi, 'value':kpi} for kpi in df1.iloc[:,3:13].columns],
                                      id='kpi_dropdown',style={'maxWidth': '200px','margin-left':'10px'}),
-                             html.Br(),
                             dcc.Graph(id='line_kpi_use', className='dbc')
                         ]),
                         style={'margin-left':'-30px', 'padding-top':'5px'}
@@ -252,10 +255,10 @@ def indicador(nivel_interacao):
     # Indicador Numero de Escolas
     if nivel_interacao is None or len(nivel_interacao) == 0:
         # When no nivel_interacao is selected, show the total number of escolas
-        total_escolas = df1['escola'].nunique()
+        total_escolas = df1['escola'].count()
         indicador_escolas = go.Figure(go.Indicator(
             mode='number',
-            title={'text': f"<span>Total de Escolas"},
+            title={'text': f"<span>Número de Registos"},
             value=total_escolas,
             number={'valueformat': '.0f','font':{'size':60}}
         ))
@@ -269,7 +272,7 @@ def indicador(nivel_interacao):
 
         if not df_filtered.empty:
             # Indicator Nivel Interacao Número de Escolas
-            df_filtered = df_filtered.groupby('nivel_interacao')['escola'].nunique().reset_index()
+            df_filtered = df_filtered.groupby('nivel_interacao')['escola'].count().reset_index()
             indicador_escolas = go.Figure(go.Indicator(
                 mode='number',
                 title={'text': f"<span>{df_filtered['nivel_interacao'].iloc[0]} e Número de Escolas"},
@@ -380,45 +383,89 @@ def indicador(nivel_interacao):
 # Tabela  ------- Ver TABELA- RANGE SLIDER NÃO ESTA A FUNCIONAR
 @callback(
     Output('table', 'figure'),
-    [Input('nivel_int_dropdown', 'value')],
-    [Input('month_slider','value')],
+     [Input('nivel_int_dropdown', 'value')],
+    [Input('month_slider_table','value')]
 )
-def tabel(selected_nivel, selected_range):
-    df_filtered = month_nivel_filter(selected_nivel, selected_range)
+def table(nivel_int, month):
+    df_filtered = df1[
+        (df1['month'] >= month[0]) &
+        (df1['month'] <= month[1]) &
+        (df1['nivel_interacao'] == nivel_int)
+    ]
     
     df_table = df_filtered[['escola','nivel_interacao','slug','interacoes_totais','tutores','second_tutor','docs_fiscais (15_dias)','mensagens (7_dias)','atividades (7_dias)','relatorios_diarios (7_dias)','avaliacoes (7_dias)','menus (7_dias)','eventos (15_dias)']]
     df_table.rename(columns={'escola':'Escola',
-                         'slug':'slug',
-                         'nivel_interacao':'Nível de Interação',
-                         'interacoes_totais':'Interações Totais',
-                         'tutores':'Tutores',
-                         'second_tutor':'Second Tutores',
-                         'docs_fiscais (15_dias)':'Docs. Fiscais',
-                         'mensagens (7_dias)':'Mensagens',
-                         'atividades (7_dias)':'Atividades',
-                         'relatorios_diarios (7_dias)':'Relatórios Diários',
-                         'avaliacoes (7_dias)':'Avaliações',
-                         'menus (7_dias)':'Menus',
-                         'eventos (15_dias)':'Eventos'}, inplace=True)
-
+                    'slug':'slug',
+                    'nivel_interacao':'Nível de Interação',
+                    'interacoes_totais':'Interações Totais',
+                    'tutores':'Tutores',
+                    'second_tutor':'Second Tutores',
+                    'docs_fiscais (15_dias)':'Docs. Fiscais',
+                    'mensagens (7_dias)':'Mensagens',
+                    'atividades (7_dias)':'Atividades',
+                    'relatorios_diarios (7_dias)':'Relatórios Diários',
+                    'avaliacoes (7_dias)':'Avaliações',
+                    'menus (7_dias)':'Menus',
+                    'eventos (15_dias)':'Eventos'}, inplace=True)
+    
     df_table.sort_values(by='Interações Totais', ascending=True, inplace=True)
 
-    
     table = go.Figure(data=[go.Table(
         header=dict(values=list(df_table.columns),
                     fill_color='paleturquoise',
                     align='center',
                     font=dict(size=12)),
         cells=dict(values=[df_table['Escola'],df_table['Nível de Interação'],df_table['slug'],df_table['Interações Totais'],df_table['Tutores'], df_table['Second Tutores'],df_table['Docs. Fiscais'], df_table['Mensagens'], df_table['Atividades'], df_table['Relatórios Diários'], df_table['Avaliações'], df_table['Menus'],df_table['Eventos'] ],
-                   fill_color='lavender',
-                   align='center',
-                   font=dict(size=12)))
+                fill_color='lavender',
+                align='center',
+                font=dict(size=12)))
                             ])
-    
+
     table.update_layout(width=1400,height=650)
-    
+
     return table
 
 # Line Plot - Kpi by month
+@callback(
+    Output('line_kpi_use', 'figure'),
+     [Input('nivel_int_dropdown', 'value')],
+    [Input('month_slider','value')],
+    [Input('kpi_dropdown', 'value')]
+)
+
+def line_plot(nivel_int, month, kpi):
+    df_filtered = df_line_plot[
+        (df_line_plot['month'] >= month[0]) & 
+        (df_line_plot['month'] <= month[1]) &
+        (df_line_plot['nivel_interacao'] == nivel_int) &
+        (df_line_plot['kpi'] == kpi)
+    ]
+    
+    df_plot = df_filtered.groupby('month')['interacoes'].sum().reset_index().sort_values(by='month')
+    
+    by_month = go.Figure(go.Scatter(
+    x=df_plot['month'], 
+    y=df_plot['interacoes'], 
+    mode='lines',
+    line=dict(color='royalblue'),
+    fill='tonexty',
+    hovertext=[f'Mês: {month}<br>Interaçôes: {interacoes}' for month, interacoes in zip(df_plot['month'], df_plot['interacoes'])]
+))
+    by_month.update_xaxes(tickfont=dict(size=16))
+    by_month.update_yaxes(title_text='Número de Interações',title_font={'size': 17}, tickfont=dict(size=16))
+
+    by_month.update_traces(marker=dict(line=dict(color='#000000', width=2)))
+
+    by_month.update_layout(width=1400,
+                       height=400,
+                       template='simple_white')
+    
+    return by_month
+
+    
+
+    
+    
+    
     
     
