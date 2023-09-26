@@ -8,6 +8,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import pandas as pd
+import base64
+import io
 
 # To create meta tag for each page, define the title, image, and description.
 dash.register_page(__name__,
@@ -121,6 +123,7 @@ months = {
 
 # Data To the line-plot. Use pd.melt() to convert kpi columns into rows
 df_line_plot = pd.melt(df1, id_vars=['month','escola','slug','nivel_interacao'], var_name='kpi', value_name='interacoes')
+df_line_plot.head()
 
 
 # =========  Layout  =========== #
@@ -131,6 +134,7 @@ layout = html.Div(
             [
                 dbc.Col(
                     [
+                        html.Div("Escolha Um Nivel de Interação:", style={'font-weight': 'bold'}),
                         dcc.Dropdown(options= [{'label':nivel, 'value':nivel} for nivel in df1['nivel_interacao'].unique()],
                                      id='nivel_int_dropdown')
                     ], xs=10, sm=10, md=8, lg=4, xl=4, xxl=4,
@@ -183,6 +187,12 @@ layout = html.Div(
                                 marks={i: months[i] for i in range(1, 13)},
                                 value=[df1['month'].min(), df1['month'].max()],
                             ),
+                            html.A(id='download_button',
+                                   children=dbc.Button('Download Data', color='primary', className='mr-1'),
+                                   href='', 
+                                   download='data.xlsx', 
+                                   target='_blank'
+                                   ),
                             dcc.Graph(id='table', className='dbc')
                         ]),
                         style={'margin-left':'-30px', 'padding-top':'5px'}
@@ -200,15 +210,20 @@ layout = html.Div(
                             html.H2('Interações Por Mês', className='card-title',style={'font-weight':'bold','color':'#343a40'}),
                             dcc.RangeSlider(
                                 id='month_slider',
-                                min=df1['month'].min(),
-                                max=df1['month'].max(),
+                                min=df_line_plot['month'].min(),
+                                max=df_line_plot['month'].max(),
                                 step=1,
                                 marks={i: months[i] for i in range(1, 13)},
-                                value=[df1['month'].min(), df1['month'].max()],
+                                value=[df_line_plot['month'].min(), df_line_plot['month'].max()],
                             ),
                             html.Br(),
-                            dcc.Dropdown(options= [{'label':kpi, 'value':kpi} for kpi in df1.iloc[:,3:13].columns],
-                                     id='kpi_dropdown',style={'maxWidth': '200px','margin-left':'10px'}),
+                            html.Div('Ecolha o Nível de Interação:',style={'font-weight': 'bold'}),
+                            dcc.Dropdown(options=[{'label':nivel, 'value':nivel} for nivel in df_line_plot['nivel_interacao'].unique()],
+                                     id='nivel_int_line',style={'maxWidth': '250px','margin-left':'10px'}, multi=True),
+                            html.Br(),
+                            html.Div("Escolha Um KPI:", style={'font-weight': 'bold'}),
+                            dcc.Dropdown(options= [{'label':kpi, 'value':kpi} for kpi in df_line_plot['kpi'].unique()],
+                                     id='kpi_dropdown',style={'maxWidth': '250px','margin-left':'10px'}, multi=True),
                             dcc.Graph(id='line_kpi_use', className='dbc')
                         ]),
                         style={'margin-left':'-30px', 'padding-top':'5px'}
@@ -275,7 +290,7 @@ def indicador(nivel_interacao):
             df_filtered = df_filtered.groupby('nivel_interacao')['escola'].count().reset_index()
             indicador_escolas = go.Figure(go.Indicator(
                 mode='number',
-                title={'text': f"<span>{df_filtered['nivel_interacao'].iloc[0]} e Número de Escolas"},
+                title={'text': f"<span>{df_filtered['nivel_interacao'].iloc[0]} e Número de Registos"},
                 value=df_filtered['escola'].iloc[0],
                 number={'valueformat': '.0f', 'font':{'size':60}}
             ))
@@ -380,7 +395,47 @@ def indicador(nivel_interacao):
 
     return nivel_interacao_pie_chart
 
-# Tabela  ------- Ver TABELA- RANGE SLIDER NÃO ESTA A FUNCIONAR
+# Button To download Data
+@callback(
+    Output('download_button', 'href'),
+     [Input('nivel_int_dropdown', 'value')],
+    [Input('month_slider_table','value')]
+)
+def button(nivel_int, month):
+    df_filtered = df1[
+        (df1['month'] >= month[0]) &
+        (df1['month'] <= month[1]) &
+        (df1['nivel_interacao'] == nivel_int)
+    ]
+    df_table = df_filtered[['escola','nivel_interacao','slug','interacoes_totais','tutores','second_tutor','docs_fiscais (15_dias)','mensagens (7_dias)','atividades (7_dias)','relatorios_diarios (7_dias)','avaliacoes (7_dias)','menus (7_dias)','eventos (15_dias)']]
+    df_table.rename(columns={'escola':'Escola',
+                    'slug':'slug',
+                    'nivel_interacao':'Nível de Interação',
+                    'interacoes_totais':'Interações Totais',
+                    'tutores':'Tutores',
+                    'second_tutor':'Second Tutores',
+                    'docs_fiscais (15_dias)':'Docs. Fiscais',
+                    'mensagens (7_dias)':'Mensagens',
+                    'atividades (7_dias)':'Atividades',
+                    'relatorios_diarios (7_dias)':'Relatórios Diários',
+                    'avaliacoes (7_dias)':'Avaliações',
+                    'menus (7_dias)':'Menus',
+                    'eventos (15_dias)':'Eventos'}, inplace=True)
+    
+    df_table.sort_values(by='Interações Totais', ascending=True, inplace=True)
+    
+   # Convert DataFrame to Excel file
+    excel_data = io.BytesIO()
+    with pd.ExcelWriter(excel_data, engine='openpyxl') as writer:
+        df_table.to_excel(writer, sheet_name='Sheet1', index=False)
+    
+    excel_data.seek(0)
+    
+    excel_base64 = base64.b64encode(excel_data.read()).decode()
+    
+    return f"data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{excel_base64}"
+
+# Tabela  
 @callback(
     Output('table', 'figure'),
      [Input('nivel_int_dropdown', 'value')],
@@ -428,17 +483,24 @@ def table(nivel_int, month):
 # Line Plot - Kpi by month
 @callback(
     Output('line_kpi_use', 'figure'),
-     [Input('nivel_int_dropdown', 'value')],
-    [Input('month_slider','value')],
-    [Input('kpi_dropdown', 'value')]
+     [Input('month_slider','value'),
+      Input('nivel_int_line', 'value'),
+    Input('kpi_dropdown', 'value')]
 )
 
-def line_plot(nivel_int, month, kpi):
+def line_plot(month,nivel_int, kpi):
+    if nivel_int is None:
+        nivel_int = []  # Empty list
+
+    # Handle the case when kpi is None
+    if kpi is None:
+        kpi = []  # Empty list
+        
     df_filtered = df_line_plot[
         (df_line_plot['month'] >= month[0]) & 
         (df_line_plot['month'] <= month[1]) &
-        (df_line_plot['nivel_interacao'] == nivel_int) &
-        (df_line_plot['kpi'] == kpi)
+        (df_line_plot['nivel_interacao'].isin(nivel_int)) &
+        (df_line_plot['kpi'].isin(kpi))
     ]
     
     df_plot = df_filtered.groupby('month')['interacoes'].sum().reset_index().sort_values(by='month')

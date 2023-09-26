@@ -129,6 +129,7 @@ layout = html.Div(
             [
                 dbc.Col(
                     [
+                        html.Div("Escolha Uma Escola:", style={'font-weight': 'bold'}),
                         dcc.Dropdown(options=[{'label': escola, 'value': escola} for escola in df1['escola'].unique()],
                                      id='escola_dropdown')
                     ], xs=10, sm=10, md=8, lg=4, xl=4, xxl=4,
@@ -309,7 +310,7 @@ def line_plot_escola(escola,month, kpi):
 
     by_month.update_traces(marker=dict(line=dict(color='#000000', width=2)))
 
-    by_month.update_layout(width=700,
+    by_month.update_layout(width=715,
                        height=400,
                        template='simple_white')
     
