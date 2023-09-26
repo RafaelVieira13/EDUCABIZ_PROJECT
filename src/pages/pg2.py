@@ -176,6 +176,7 @@ layout = html.Div(
                                     value=[df1['month'].min(), df1['month'].max()],
                                 ),
                                 html.Br(),
+                                html.Div('Escolha Um KPI:',style={'font-weight': 'bold'}),
                                 dcc.Dropdown(
                                     options=[{'label': kpi, 'value': kpi} for kpi in df1.iloc[:, 3:13].columns],
                                     id='kpi_dropdown_escola', style={'maxWidth': '200px', 'margin-left': '10px'}),
