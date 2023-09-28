@@ -424,7 +424,6 @@ def button(nivel_int, month):
     
     df_table.sort_values(by='Interações Totais', ascending=True, inplace=True)
     
-   # Convert DataFrame to Excel file
     excel_data = io.BytesIO()
     with pd.ExcelWriter(excel_data, engine='openpyxl') as writer:
         df_table.to_excel(writer, sheet_name='Sheet1', index=False)
@@ -433,7 +432,8 @@ def button(nivel_int, month):
     
     excel_base64 = base64.b64encode(excel_data.read()).decode()
     
-    return f"data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{excel_base64}"
+    return f"data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{excel_base64}&filename=my_excel_file.xlsx"
+    
 
 # Tabela  
 @callback(
