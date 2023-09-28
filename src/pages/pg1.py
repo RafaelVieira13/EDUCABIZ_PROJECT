@@ -178,7 +178,7 @@ layout = html.Div(
                 dbc.CardGroup([
                     dbc.Card(
                         dbc.CardBody([
-                            html.H2('Tabela', className='card-title',style={'font-weight':'bold','color':'#343a40'}),
+                            html.H2('Tabela De Acordo Com Nível de Interação', className='card-title',style={'font-weight':'bold','color':'#343a40'}),
                             dcc.RangeSlider(
                                 id='month_slider_table',
                                 min=df1['month'].min(),
@@ -187,11 +187,12 @@ layout = html.Div(
                                 marks={i: months[i] for i in range(1, 13)},
                                 value=[df1['month'].min(), df1['month'].max()],
                             ),
-                            dbc.Button(id='download-button',
-                                       children = [html.I(className="fa fa-download mr-1"), "Download"],
-                                       color='info', 
-                                       className='mr-1'),
-                            dcc.Download(id='download-data'),
+                            html.A(id='download_button',
+                                   children=dbc.Button([html.I(className="fa fa-download mr-1"), "Download"], color='info', className='mr-1'),
+                                   href='', 
+                                   download='data.xlsx', 
+                                   target='_blank'
+                                   ),
                             dcc.Graph(id='table', className='dbc')
                         ]),
                         style={'margin-left':'-30px', 'padding-top':'5px'}
@@ -396,15 +397,11 @@ def indicador(nivel_interacao):
 
 # Button To download Data
 @callback(
-    Output('download-data', 'data'),
-     [Input('download-button','n_clicks'),
-      Input('nivel_int_dropdown', 'value')],
+    Output('download_button', 'href'),
+     [Input('nivel_int_dropdown', 'value')],
     [Input('month_slider_table','value')]
 )
-def button(n_clicks,nivel_int, month):
-    if n_clicks is None:
-        return None
-    
+def button(nivel_int, month):
     df_filtered = df1[
         (df1['month'] >= month[0]) &
         (df1['month'] <= month[1]) &
@@ -428,8 +425,15 @@ def button(n_clicks,nivel_int, month):
     df_table.sort_values(by='Interações Totais', ascending=True, inplace=True)
     
    # Convert DataFrame to Excel file
-    file_path = '/Transferências/data.xlsx'
-    return dcc.send_data_frame(df_table.to_excel, 'data.xlsx',file_path, sheet_name='Sheet_name_1',index=False)
+    excel_data = io.BytesIO()
+    with pd.ExcelWriter(excel_data, engine='openpyxl') as writer:
+        df_table.to_excel(writer, sheet_name='Sheet1', index=False)
+    
+    excel_data.seek(0)
+    
+    excel_base64 = base64.b64encode(excel_data.read()).decode()
+    
+    return f"data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{excel_base64}"
 
 # Tabela  
 @callback(
