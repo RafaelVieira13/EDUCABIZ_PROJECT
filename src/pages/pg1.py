@@ -428,7 +428,8 @@ def button(n_clicks,nivel_int, month):
     df_table.sort_values(by='Interações Totais', ascending=True, inplace=True)
     
    # Convert DataFrame to Excel file
-    return dcc.send_data_frame(df_table.to_excel, 'data.xlsx', sheet_name='Sheet_name_1',index=False)
+    file_path = '/Transferências/data.xlsx'
+    return dcc.send_data_frame(df_table.to_excel, 'data.xlsx',file_path, sheet_name='Sheet_name_1',index=False)
 
 # Tabela  
 @callback(
