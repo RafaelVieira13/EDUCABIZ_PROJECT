@@ -9,7 +9,6 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import pandas as pd
 import base64
-import io
 
 # To create meta tag for each page, define the title, image, and description.
 dash.register_page(__name__,
@@ -190,7 +189,7 @@ layout = html.Div(
                             html.A(id='download_button',
                                    children=dbc.Button([html.I(className="fa fa-download mr-1"), "Download"], color='info', className='mr-1'),
                                    href='', 
-                                   download='data.xlsx', 
+                                   download='data.csv', 
                                    target='_blank'
                                    ),
                             dcc.Graph(id='table', className='dbc')
@@ -424,15 +423,10 @@ def button(nivel_int, month):
     
     df_table.sort_values(by='Interações Totais', ascending=True, inplace=True)
     
-    excel_data = io.BytesIO()
-    with pd.ExcelWriter(excel_data, engine='openpyxl') as writer:
-        df_table.to_excel(writer, sheet_name='Sheet1', index=False)
-    
-    excel_data.seek(0)
-    
-    excel_base64 = base64.b64encode(excel_data.read()).decode()
-    
-    return f"data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{excel_base64}&filename=my_excel_file.xlsx"
+    csv_string = df_table.to_csv(index=False, encoding='utf-8')
+    csv_bytes = csv_string.encode('utf-8')
+    b64 = base64.b64encode(csv_bytes).decode()
+    return f"data:text/csv;base64,{b64}"
     
 
 # Tabela  
