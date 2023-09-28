@@ -306,7 +306,7 @@ def line_plot_escola(escola,month, kpi):
     fill='tonexty',
     hovertext=[f'Mês: {month}<br>Interaçôes: {interacoes}' for month, interacoes in zip(df_plot['month'], df_plot['interacoes'])]
 ))
-    by_month.update_xaxes(tickfont=dict(size=16))
+    by_month.update_xaxes(title_text='Mês',title_font={'size': 17},tickfont=dict(size=16))
     by_month.update_yaxes(title_text='Número de Interações',title_font={'size': 17}, tickfont=dict(size=16))
 
     by_month.update_traces(marker=dict(line=dict(color='#000000', width=2)))
